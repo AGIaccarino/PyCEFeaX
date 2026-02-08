@@ -99,7 +99,10 @@ with Conda, create the environment using:
 
     conda env create -f environment.yml
 
+Once installed all the requirements, install pycefeax:
 
+    pip install pycefeax
+    
 ________________________________________
 
 ### Functions
