@@ -1,0 +1,9 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pycefeax"
+version = "1.0.0"
+description = "Python Code for Earthquake Features eXtraction"
+requires-python = ">=3.12"
