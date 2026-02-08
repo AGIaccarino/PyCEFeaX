@@ -1,107 +1,124 @@
-# PyCEFeaX (Python Code for Earthquake Features eXtraction)
-# Overview
+# PyCEFeaX 
+## Python Code for Earthquake Features eXtraction
+### Overview
 PyCEFeaX is a Python-based software package designed to extract physics-oriented features from seismic catalogs.
+
 The code provides a unified and reproducible framework to characterize the spatio-temporal, energetic, and statistical properties of seismicity, with a particular focus on the analysis of seismic sequences preceding and following moderate-to-large earthquakes.
+
 PyCEFeaX has been developed to support feature-based studies of earthquake preparation, fault interaction, fluid diffusion, and aftershock evolution, and to provide physically interpretable inputs for machine learning applications in seismology.
+
 The methodology and scientific background of PyCEFeaX are described in detail in:
+
 Iaccarino, A.G., Picozzi, M. — PyCEFeaX: a Python Code for Earthquake Features eXtraction (submitted).
 ________________________________________
-# Key Features
+### Key Features
 PyCEFeaX computes a comprehensive set of 26 catalog-driven features, including:
-•	Temporal organization
-o	Window duration (DT)
-o	Event rate (ρr)
-o	Coefficient of variation of inter-event times (CoVdt)
-o	Linear and quadratic trends of inter-event times
-•	Spatial organization
-o	Area (A) and Volume (V)
-o	Spatial density (ρs)
-o	Correlation integral (Cr)
-o	Fractal dimension (Dc)
-o	Percentage cylinder radius (rperc)
-o	Spatial PCA (eigenvalues and eigenvectors)
-•	Energetic and stress-related properties
-o	Moment rate (Mr)
-o	Effective stress (Seff)
-o	Kostrov strain (Δε)
-•	Statistical descriptors
-o	Gutenberg–Richter parameters (aGR, bGR)
-o	Magnitude of completeness (Mc)
-o	Normalized Shannon entropy (h)
+
+- Temporal organization
+1. Window duration (DT)
+2.	Event rate (ρr)
+3.	Coefficient of variation of inter-event times (CoVdt)
+4.	Linear and quadratic trends of inter-event times
+-	Spatial organization
+5.	Area (A) and Volume (V)
+6.	Spatial density (ρs)
+7.	Correlation integral (Cr)
+8.	Fractal dimension (Dc)
+9.	Percentage cylinder radius (rperc)
+10.	Spatial PCA (eigenvalues and eigenvectors)
+-	Energetic and stress-related properties
+11.	Moment rate (Mr)
+12.	Effective stress (Seff)
+13.	Kostrov strain (Δε)
+-	Statistical descriptors
+14.	Gutenberg–Richter parameters (aGR, bGR)
+15.	Magnitude of completeness (Mc)
+16.	Normalized Shannon entropy (h)
+
 All features are computed using moving windows of events, optionally combined with bootstrap resampling to quantify feature variability.
 ________________________________________
-# Code Structure
+### Code Structure
 PyCEFeaX is organized into two main modules:
-1. Preprocessing
-The preprocessing module performs:
-•	Gutenberg–Richter analysis
-o	Estimation of aGR, bGR, and magnitude of completeness (Mc)
-o	Based on maximum-likelihood estimation
-o	Selected routines adapted from the ZMAP toolbox (Wiemer, 2001) and reimplemented in Python
-•	Nearest-neighbor distance analysis
-o	Computation of rescaled time (T), space (R), and generalized distance (η)
-o	Based on Zaliapin et al. (2008)
-o	Allows separation of background and clustered seismicity
-This step enables users to restrict feature computation to:
-•	events above Mc,
-•	background seismicity,
-•	clustered seismicity,
-•	or the full catalog.
+#### Preprocessing
 
-2. Feature Computation
+The preprocessing module performs:
+ 1.	Gutenberg–Richter analysis
+     - Estimation of aGR, bGR, and magnitude of completeness (Mc)
+     -	Based on maximum-likelihood estimation
+     -	Selected routines adapted from the ZMAP toolbox (Wiemer, 2001) and reimplemented in Python
+ 2. Nearest-neighbor distance analysis
+     -	Computation of rescaled time (T), space (R), and generalized distance (η)
+     -	Based on Zaliapin et al. (2008)
+     -	Allows separation of background and clustered seismicity
+ 
+This step enables users to restrict feature computation to:
+- events above Mc,
+- background seismicity,
+- clustered seismicity,
+- or the full catalog.
+
+#### Feature Computation
 Features are computed on a moving window of Nwin events and associated with the last event of each window, allowing a causal interpretation of feature evolution.
 Key options include:
-•	selection of a percentage of events (Ev%) spatially associated with the last event,
-•	bootstrap resampling (Nboot realizations),
-•	user-defined physical parameters (e.g., rigidity μ).
+-	selection of a percentage of events (Ev%) spatially associated with the last event,
+-	bootstrap resampling (Nboot realizations),
+-	user-defined physical parameters (e.g., rigidity μ).
 ________________________________________
-# Input Data
+### Input Data
 PyCEFeaX requires a seismic catalog containing:
-•	Origin time
-•	Hypocentral coordinates (latitude, longitude, depth)
-•	Magnitude (moment magnitude Mw)
+-	Origin time
+-	Hypocentral coordinates (latitude, longitude, depth)
+-	Magnitude (moment magnitude Mw)
+
 Catalogs can include foreshocks, aftershocks, or background seismicity.
+
 Examples provided in the repository include datasets related to the 2009 Mw 6.1 L’Aquila earthquake.
 ________________________________________
-Output
+### Output
 The code outputs:
-•	Time series of features associated with catalog events
-•	Bootstrap-based uncertainty estimates (median and standard deviation)
-•	Intermediate preprocessing results (GR parameters, η distributions)
+-	Time series of features associated with catalog events
+-	Bootstrap-based uncertainty estimates (median and standard deviation)
+-	Intermediate preprocessing results (GR parameters, η distributions)
 Outputs are suitable for:
-•	direct scientific interpretation,
-•	comparative studies across regions or sequences,
-•	machine learning workflows.
+-	direct scientific interpretation,
+-	comparative studies across regions or sequences,
+-	machine learning workflows.
 ________________________________________
-Installation
+### Installation
 Clone the repository:
-git clone https://gitlab.com/USERNAME/PyCEFeaX.git
-cd PyCEFeaX
+    
+    git clone https://gitlab.com/USERNAME/PyCEFeaX.git
+
+    cd PyCEFeaX
+
 Install required dependencies (recommended via virtual environment):
-pip install -r requirements.txt
+
+    pip install -r requirements.txt
+
+with Conda, create the environment using:
+
+    conda env create -f environment.yml
+
+
 ________________________________________
 
-Functions
-make_df(source_origin_time,source_latitude_deg,source_longitude_deg,source_depth_km,source_magnitude): return data
+### Functions
+     make_df(source_origin_time,source_latitude_deg,source_longitude_deg,source_depth_km,source_magnitude): return data
+
 This function creates a Pandas dataframe (data) in a SeisBench-like format. The inputs are Pandas Series that contains, in the order: Origin time, Latitude, Longitude, Depth (km) and Magnitude for all the events of the catalogue.
- get_feature(data): return preprocess, features
+
+     get_feature(data): return preprocess, features
+
 get_feature is the main function of PyCEFeaX. It will read the configuration file and start Preprocessing and Feature computation (when requested) on “data”. “data” must be the dataframe created with make_df. The outputs are “preprocess”, a dataframe contains the results from the GR and nearest-neighbor analyses, and “features”, a dataframe that contains the features for the analyzed windows. The function also saves both outputs in a folder named “output/$save-tag$” with save-tag that can be set in the input.json file. 
 
-plot_allfeatures(features,  start_date=datetime(1900,1,1), end_date=datetime(2099,12,31)): return None
-plot_allfeatures is function that plots all the features in time in one figure. The input are the features computed with get_feature, and the starting and ending dates that must be in datetime format.
+    plot_allfeatures(features,  start_date=datetime(1900,1,1), end_date=datetime(2099,12,31)): return None
 
-Usage
-A typical workflow consists of:
-1.	Fill the file input.json with the wanted configurations
-2.	Import PyCEFeaX with the command “import PyCEFeaX as pfx”.
-3.	Load the seismic catalog and create the input dataframe using the in-built pfx.make_df function
-4.	Run pfx.get_feature to compute the features.
-5.	Plot the features in time using pfx.plot_all_features.
-6.	Example scripts and configuration files are provided in the repository.
+plot_allfeatures is function that plots all the features in time in one figure. The input are the features computed with get_feature, and the starting and ending dates that must be in datetime format.
 ________________________________________
-Configuration file (Input.json)
+### Configuration file (Input.json)
 The configuration file, “input.json”, contains all the parameters to configurate PyCEFeaX. Here it is an example:
 {
+    
     "only_preprocess": false,
 only_preprocess controls whether PyCEFeaX has to perform only the preprocessing module. When “false”, PyCEFeaX performs both Preprocessing and Features Computation.
 
@@ -116,7 +133,7 @@ save_tag is a string that will identify the output directory and files.
 
 Mc is the completeness magnitude of the dataset or, in general, the minimum magnitude you want to analyze. If null, PyCEFeaX will use the Mc value obtained from the GR computation
 
-"Mmax" : null,
+    "Mmax" : null,
 
 Mmax is maximum magnitude that PyCEFeaX will analyze. If null, there will be no upper limit for magnitude.
 
@@ -177,27 +194,39 @@ b-value is the value of b (Gutemberg-Richter relation).
         "rmax_km":150
 
 rmax_km is the maximum radius in km
-        }
-}
+        
+
 ________________________________________
-Scientific Background
+### Usage
+A typical workflow consists of:
+1.	Fill the file input.json with the wanted configurations
+2.	Import PyCEFeaX with the command “import PyCEFeaX as pfx”.
+3.	Load the seismic catalog and create the input dataframe using the in-built pfx.make_df function
+4.	Run pfx.get_feature to compute the features.
+5.	Plot the features in time using pfx.plot_all_features.
+6.	Example scripts and configuration files are provided in the repository.
+________________________________________
+
+### Scientific Background
 Most feature-extraction routines in PyCEFeaX were independently implemented by the authors based on the methodological descriptions in the original literature.
+
 In a limited number of cases, Python implementations correspond to reimplementations of publicly released codes, with appropriate attribution.
 PyCEFeaX has been tested on both foreshock and aftershock sequences, demonstrating its ability to characterize:
-•	preparatory phases,
-•	stress-release processes,
-•	diffusion and localization of seismicity,
-•	sequence segmentation and doublets.
+
+-	preparatory phases,
+-	stress-release processes,
+-	diffusion and localization of seismicity,
+-	sequence segmentation and doublets.
 ________________________________________
-Reproducibility
+### Reproducibility
 All analyses presented in the associated publication can be fully reproduced using:
-•	the catalogs provided in this repository,
-•	the configuration files supplied with the examples.
+-	the catalogs provided in this repository,
+-	the configuration files supplied with the examples.
 ________________________________________
-License
+### License
 [Specify license here, e.g., MIT / GPL-3.0]
 ________________________________________
-Contact
+### Contact
 For questions, feedback, or collaboration:
 A.G. Iaccarino (antoniogiovanni.iaccarino@unina.it)
 M. Picozzi
