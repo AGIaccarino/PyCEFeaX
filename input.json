@@ -1,0 +1,28 @@
+{
+    "only_preprocess": false,
+    "checkpoint": true,
+    "save_tag": "AQ2009_Mw_DD",
+    "Mc":null,
+    "GR_bin":0.1,
+    "Bootstrap": true,
+    "Bootstrap_repetitions": 200,
+    "perc":0.8,
+    "event-window" : 250,
+    "r_cint_km":[1,2,5],
+    "Mmax" : null,
+    "period" :{
+            "begin": "2004-04-05T00:00:00",
+            "end": "2099-04-06T17:05:00"
+        
+        },
+    "Ngrid_Shannon_Entropy"  : 20,
+    "Dmax" : null,
+    "mu_GPa":  30,
+    "ETA-Computation": {
+        "window-size":200,
+        "window-step":1,
+        "Dc":1.6,
+        "b-value":1,
+        "rmax_km":150
+        }
+}
