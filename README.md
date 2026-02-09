@@ -209,7 +209,18 @@ A typical workflow consists of:
 5.	Plot the features in time using pfx.plot_all_features.
 6.	Example scripts and configuration files are provided in the repository.
 ________________________________________
+### Examples
+Two examples are provided with the code: 
+- FOREAQ, that uses a catalogue of the foreshock sequence preceding the 2009 L'Aquila earthquake.
+- AQ2009, that uses a catalogue of the aftershock sequence preceding the 2009 L'Aquila earthquake.
 
+For both examples, a set of preprocessing and features is already computed, and they can be reproduced executing the file *_feat.ipynb or the equivalent *_feat.py.
+
+The codes  Pycefeax_notebook_*.ipynb (.py) plot the results. 
+
+It is important to note that the examples as they are, reproduce the results and figures of Iaccarino and Picozzi (submitted in 2026), any change in input.json can change the resulting figures.
+
+________________________________________
 ### Scientific Background
 Most feature-extraction routines in PyCEFeaX were independently implemented by the authors based on the methodological descriptions in the original literature.
 
