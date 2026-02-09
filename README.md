@@ -239,6 +239,11 @@ All analyses presented in the associated publication can be fully reproduced usi
 ________________________________________
 ### License
 This project is released under the MIT License.
+
+________________________________________
+### Citation
+
+Iaccarino, Antonio Giovanni and, Picozzi, Matteo. PyCEFeaX, Python Code for Earthquake Features eXtraction. (2026) Zenodo. DOI: 10.5281/zenodo.18548970
 ________________________________________
 ### Contact
 For questions, feedback, or collaboration:
