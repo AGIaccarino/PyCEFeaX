@@ -87,8 +87,8 @@ ________________________________________
 ### Installation
 Clone the repository:
     
-    git clone https://gitlab.com/USERNAME/PyCEFeaX.git
-
+    git clone https://github.com/AGIaccarino/PyCEFeaX.git
+    
     cd PyCEFeaX
 
 Install required dependencies (recommended via virtual environment):
