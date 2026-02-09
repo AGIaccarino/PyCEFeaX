@@ -227,7 +227,7 @@ All analyses presented in the associated publication can be fully reproduced usi
 -	the configuration files supplied with the examples.
 ________________________________________
 ### License
-[Specify license here, e.g., MIT / GPL-3.0]
+This project is released under the MIT License.
 ________________________________________
 ### Contact
 For questions, feedback, or collaboration:
