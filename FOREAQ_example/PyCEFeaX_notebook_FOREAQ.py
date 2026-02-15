@@ -149,8 +149,10 @@ fig, axes = plt.subplots(1,2, figsize=(11, 4.5))
 axes[0].annotate(text='a)',xy=(-0.12,0.97),xycoords='axes fraction')
 
 
-hist, bin=np.histogram(cata_pfx['source_magnitude'],bins=np.arange(np.floor(cata_pfx['source_magnitude'].min()*10)/10-0.05,np.ceil(cata_pfx['source_magnitude'].max()*10)/10+0.015,0.1))
+hist, bin=np.histogram(cata_pfx['source_magnitude'],bins=np.arange(np.floor(cata_pfx['source_magnitude'].min()*10)/10-0.05,np.ceil(cata_pfx['source_magnitude'].max()*10)/10+0.15,0.1))
 Mbin=(bin[:-1]+bin[1:])/2
+Mbin=Mbin[hist>0]
+hist=hist[hist>0]
 
 axes[0].plot(Mbin,np.log10(np.cumsum(hist[::-1])[::-1]),'go',label='data')
 
@@ -349,11 +351,11 @@ p_x, p_y = project(P_vec,neg=True)
 t_x, t_y = project(T_vec,neg=True)
 # Plot PCA in time
 if P_vec[2]<0:
-    ax.scatter(p_x, p_y, s=200, color='magenta', marker='X', label='P (AQU)', zorder=3, linewidths=1, edgecolors='k')
-    ax.scatter(t_x, t_y, s=200, color='darkgray', marker='X', label='T (AQU)', zorder=3, linewidths=1, edgecolors='k')
+    ax.scatter(p_x, p_y, s=100, color='magenta', marker='X', label='P (AQU)', zorder=3, linewidths=1, edgecolors='k')
+    ax.scatter(t_x, t_y, s=100, color='darkgray', marker='X', label='T (AQU)', zorder=3, linewidths=1, edgecolors='k')
 else:
-    ax.scatter(p_x, p_y, s=200, color='magenta', marker='o', label='P (AQU)', zorder=3, linewidths=1, edgecolors='k')
-    ax.scatter(t_x, t_y, s=200, color='darkgray', marker='o', label='T (AQU)', zorder=3, linewidths=1, edgecolors='k')
+    ax.scatter(p_x, p_y, s=100, color='magenta', marker='o', label='P (AQU)', zorder=3, linewidths=1, edgecolors='k')
+    ax.scatter(t_x, t_y, s=100, color='darkgray', marker='o', label='T (AQU)', zorder=3, linewidths=1, edgecolors='k')
 for i, row in data.iterrows():
     if row['source_origin_time'] > t_start and row['source_origin_time'] < t_end  :
        
@@ -407,10 +409,10 @@ for line in ax.lines:
 plt.title("N")
 cax=ax.inset_axes([0.05, 0.05, 1.2, 0.9])
 cax.axis('off')
-sm = plt.cm.ScalarMappable(cmap=plt.cm.jet, norm=plt.Normalize(vmin=0, vmax=(t_end - t_AQ ).total_seconds()/3600))
+sm = plt.cm.ScalarMappable(cmap=plt.cm.jet, norm=plt.Normalize(vmax=0, vmin=-(t_end - t_start ).total_seconds()/3600/24))
 sm.set_array([])
 cbar = plt.colorbar(sm, ax=cax, orientation='vertical', pad=2, aspect=30, shrink=1)
-cbar.set_label('Hours from L\'Aquila earthquake', fontsize=10)
+cbar.set_label('Days to L\'Aquila earthquake', fontsize=10)
 
 plt.legend(loc='upper right', bbox_to_anchor=(1.25, 1.05), fontsize=8, edgecolor='black')
 plt.show()
