@@ -101,7 +101,7 @@ with Conda, create the environment using:
 
 Once installed all the requirements, install pycefeax:
 
-    pip install pycefeax
+    pip install -e .
     
 ________________________________________
 
