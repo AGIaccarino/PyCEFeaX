@@ -174,6 +174,9 @@ def get_feature(data):
             features=features.iloc[:, list(column_order)]
             
             features.to_csv(output_path + "/features.csv", index=False)
+    else:
+        features=[]
+        
     return preprocess, features
 
 # 
@@ -986,5 +989,5 @@ def plot_allfeatures(features,  start_date=datetime(1900,1,1), end_date=datetime
     plt.show()
     warnings.filterwarnings("default")
 
-    return
+    return fig
 
