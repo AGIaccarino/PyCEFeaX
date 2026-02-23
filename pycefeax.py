@@ -4,7 +4,7 @@ Created on Tue Jan  7 14:31:15 2025
 
 @author: johna
 
-Version 1.0.0
+Version 1.0.1
 """
 
 # 
@@ -261,10 +261,11 @@ def features_computation(data, input_par):
 
     perc=input_par["perc"]
     r_cint=input_par["r_cint_km"]
-    data = data.sort_values(by='source_origin_time')
 
     ref_source_latitude_deg=data.source_latitude_deg.iloc[-1]
     ref_source_longitude_deg=data.source_longitude_deg.iloc[-1]
+
+    
 
     x,y=convert_to_local(data.source_latitude_deg, data.source_longitude_deg, 
         ref_source_latitude_deg, ref_source_longitude_deg)
@@ -282,6 +283,8 @@ def features_computation(data, input_par):
     if (Dmax is None) or Dmax>Nev:
         Dmax=Nev
     
+    data = data.sort_values(by='source_origin_time')
+
     #DT and time rate
     DTk=(data.source_origin_time.iloc[-1]-data.source_origin_time.iloc[0]).total_seconds()
     try :
@@ -296,16 +299,19 @@ def features_computation(data, input_par):
                          ref_source_latitude_deg, ref_source_longitude_deg)
     z=data.source_depth_km*1000
 
-
-    # Area and Volume of Convex Hull
-    delaunay_2d = Delaunay(np.vstack((x, y)).T)
-    convex_hull_2d = ConvexHull(delaunay_2d.points)
-    areak = convex_hull_2d.volume  # Area in m² (volume attribute for 2D corresponds to area)
-    
-    
-    delaunay_3d = Delaunay(np.vstack((x , y, z)).T)
-    convex_hull_3d = ConvexHull(delaunay_3d.points)
-    VOL = convex_hull_3d.volume  # Volume in m³
+    try:
+        # Area and Volume of Convex Hull
+        delaunay_2d = Delaunay(np.vstack((x, y)).T)
+        convex_hull_2d = ConvexHull(delaunay_2d.points)
+        areak = convex_hull_2d.volume  # Area in m² (volume attribute for 2D corresponds to area)
+    except:
+        areak=np.nan
+    try:
+        delaunay_3d = Delaunay(np.vstack((x , y, z)).T)
+        convex_hull_3d = ConvexHull(delaunay_3d.points)
+        VOL = convex_hull_3d.volume  # Volume in m³
+    except:
+        VOL=np.nan
     
     # Event spatial density
     try:
@@ -346,9 +352,13 @@ def features_computation(data, input_par):
     log_Nij = np.log10(Nij)
     X = sm.add_constant(log_Rij)
     
-    rlm_model = sm.RLM(log_Nij, X, M=sm.robust.norms.TukeyBiweight(c=2))
-    rlm_results = rlm_model.fit()
-    Dc1=rlm_results.params[1]
+    try:
+        rlm_model = sm.RLM(log_Nij, X, M=sm.robust.norms.TukeyBiweight(c=2))
+        rlm_results = rlm_model.fit()
+        Dc1=rlm_results.params[1]
+    except:
+        raise KeyError(f"{data.shape, Combo.shape, log_Rij.shape, log_Nij.shape,Nev}")
+        Dc1=np.nan
 
 
     #SEff
@@ -825,7 +835,7 @@ def findcilinder(P,perc):
         if repet>10000:
             break
     if howmanyin(P,r)<2:
-        print("Warning: less than 2 events in the cilinder")
+        print(f"Warning: less than 2 events in the cilinder {P.shape, perc, r, Nin}")
     
     P=P[whoin(P,r),:]
     depi = np.linalg.norm(P[:,:2] - P[-1,:2], axis=1)
@@ -833,6 +843,7 @@ def findcilinder(P,perc):
     r=max(depi.max(),dz.max())
             
     return r,P
+
 def howmanyin(P,r):
     depi = np.linalg.norm(P[:,:2] - P[-1,:2], axis=1)
     dz=np.abs(P[:,2]-P[-1,2])
