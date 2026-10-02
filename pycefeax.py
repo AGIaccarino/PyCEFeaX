@@ -4,7 +4,7 @@ Created on Tue Jan  7 14:31:15 2025
 
 @author: johna
 
-Version 1.0.1
+Version 1.0.2
 """
 
 # 
@@ -273,6 +273,7 @@ def features_computation(data, input_par):
 
     # Data spatial selection and r_perc
     P=np.vstack((x, y, z)).T
+    # print(f"Finding cilinder for {data.shape[0]} events...")
     r_perc,_=findcilinder(P, perc)
     
     IDperc=whoin(P, r_perc)
@@ -280,8 +281,8 @@ def features_computation(data, input_par):
     Nev=data.shape[0]
 
 
-    if (Dmax is None) or Dmax>Nev:
-        Dmax=Nev
+    if (Dmax is None) :
+        Dmax=r_perc/1000
     
     data = data.sort_values(by='source_origin_time')
 
@@ -342,24 +343,29 @@ def features_computation(data, input_par):
         Mr=np.nan
 
     #  Correlation integral and Fractal dimension
+    P=np.vstack((x, y, z)).T
 
-    index=np.arange(data.shape[0])
-  
+    uniqP=np.unique(P, axis=0)
+    index=np.arange(uniqP.shape[0])
+
+    
     Combo =np.array( list(combinations(index, 2)))
-
-    [Rij,Nij,cor_int]=myfract3(x/1000,y/1000,data.source_depth_km,Combo,Dmax,r_cint)
-    log_Rij = np.log10(Rij)
-    log_Nij = np.log10(Nij)
-    X = sm.add_constant(log_Rij)
+    
     
     try:
-        rlm_model = sm.RLM(log_Nij, X, M=sm.robust.norms.TukeyBiweight(c=2))
-        rlm_results = rlm_model.fit()
+        [Rij,Nij,cor_int]=myfract3(uniqP[:,0]/1000,uniqP[:,1]/1000,uniqP[:,2]/1000,Combo,Dmax,r_cint)
+        log_Rij = np.log10(Rij)
+        log_Nij = np.log10(Nij)
+        rlm_results,_=progressive_RLM(log_Rij, log_Nij)
+
+        # X = sm.add_constant(log_Rij)
+        # rlm_model = sm.RLM(log_Nij, X, M=sm.robust.norms.TukeyBiweight(c=2))
+        # rlm_results = rlm_model.fit()
         Dc1=rlm_results.params[1]
     except:
-        raise KeyError(f"{data.shape, Combo.shape, log_Rij.shape, log_Nij.shape,Nev}")
+        # raise KeyError(f"{data.shape, Combo.shape, log_Rij.shape, log_Nij.shape,Nev}")
         Dc1=np.nan
-
+        cor_int=np.nan*np.ones(len(r_cint))
 
     #SEff
 
@@ -776,10 +782,103 @@ def calc_bmemag(mag, f_binning=0.1):
 
     return f_mean_mag, f_b_value, f_std_dev, f_a_value
 
+import numpy as np
+import statsmodels.api as sm
 
+
+def robust_R2(results, weight_threshold=0):
+    """R² calculated only on RLM inliers."""
+    
+    weights = np.asarray(results.weights)
+    mask = weights > weight_threshold
+
+    y = np.asarray(results.model.endog)[mask]
+    y_pred = np.asarray(results.fittedvalues)[mask]
+
+    if len(y) < 2:
+        return np.nan
+
+    ss_res = np.sum((y - y_pred) ** 2)
+    ss_tot = np.sum((y - np.mean(y)) ** 2)
+
+    if ss_tot == 0:
+        return np.nan
+
+    return 1 - ss_res / ss_tot
+
+
+def progressive_RLM(x, y, step=0.05,
+                    r2_good=0.95,
+                    r2_acceptable=0.90,
+                    max_removed=0.50):
+
+    x = np.asarray(x)
+    y = np.asarray(y)
+
+    order = np.argsort(x)
+    x = x[order]
+    y = y[order]
+
+    n = len(x)
+
+    removed = 0
+    max_remove = int(n * max_removed)
+
+    history=[]
+    
+    while removed <= max_remove:
+
+        x_fit = x[:n - removed]
+        y_fit = y[:n - removed]
+
+        # Design matrix
+        X = sm.add_constant(x_fit)
+
+        model=sm.RLM(y_fit, X, M=sm.robust.norms.TukeyBiweight(c=2))
+        results = model.fit()
+
+        # R² for inlier RLM
+        r2 = robust_R2(results)
+
+       
+
+        
+        history.append({
+            "removed": removed,
+            "R2": r2,
+            "results": results
+        })
+        # Good Fit 
+        if r2 >= r2_good:
+            return results, r2
+
+
+        # Next step
+        n_remove = max(1, int(np.ceil(step * n)))
+        removed += n_remove
+    
+    acceptable = [
+        h for h in history
+        if h["R2"] >= r2_acceptable
+    ]
+
+    if acceptable:
+        # Smallest number of removed points
+        selected = min(
+            acceptable,
+            key=lambda h: h["removed"]
+        )
+    else:
+        # No acceptable fit: choose maximum R²
+        selected = max(
+            history,
+            key=lambda h: h["R2"]
+        )
+    # print("history", history)
+    return selected["results"], selected["R2"]
+    
 def myfract3(xa, ya, depa, Combo, Dmax,Di1):
     #Correlation integral and Fractal dimension
-    step = np.arange(2, Dmax+1, 1, dtype=int)
     
     
     xcom1 = xa[Combo[:, 0]]
@@ -788,8 +887,8 @@ def myfract3(xa, ya, depa, Combo, Dmax,Di1):
     ycom1 = ya[Combo[:, 0]]
     ycom2 = ya[Combo[:, 1]]
     
-    depa1 = depa.iloc[Combo[:, 0]].values
-    depa2 = depa.iloc[Combo[:, 1]].values
+    depa1 = depa[Combo[:, 0]]
+    depa2 = depa[Combo[:, 1]]
 
     
     coords1 = np.vstack((xcom1, ycom1)).T
@@ -800,13 +899,14 @@ def myfract3(xa, ya, depa, Combo, Dmax,Di1):
     
     
     Ripo = np.sqrt(Repi**2 + (depa1 - depa2)**2)
-    Xkm = Ripo
+    Xkm = Ripo[Ripo >0]
     
-    Di = Dmax / step
+
+    Di=np.logspace(np.log10(np.min(Xkm)),np.log10(Dmax),num=200)
     Ne = len(Xkm)
-    Nij = np.array([(1 / (Ne**2)) * np.nansum(Xkm < d) for d in Di])
+    Nij = np.array([(1 / ((Ne-1)*Ne)) * np.nansum(Xkm < d) for d in Di])
     Rij = Di
-    cor_int = np.array([(1 / (Ne**2)) * np.nansum(Xkm < d) for d in Di1])
+    cor_int = np.array([(1 / ((Ne-1)*Ne)) * np.nansum(Xkm < d) for d in Di1])
     
 
     
@@ -835,7 +935,7 @@ def findcilinder(P,perc):
         if repet>10000:
             break
     if howmanyin(P,r)<2:
-        print(f"Warning: less than 2 events in the cilinder {P.shape, perc, r, Nin}")
+        print(f"Warning: less than 2 events in the cilinder {P.shape, perc, r, Nin,repet}")
     
     P=P[whoin(P,r),:]
     depi = np.linalg.norm(P[:,:2] - P[-1,:2], axis=1)
@@ -863,15 +963,64 @@ def make_df(source_origin_time,source_latitude_deg,source_longitude_deg,source_d
     df=pd.DataFrame(data=data)
     return df
 
+def highlight_deviation(ax, source_origin_time, rolling_mean, rolling_std, sigma_lim, mean_window):
 
+        
+    scal_diff=(rolling_mean[mean_window:].values-rolling_mean[:-mean_window].values)/(np.sqrt(rolling_std[mean_window:].values**2 + rolling_std[:-mean_window].values**2))
 
-def plot_allfeatures(features,  start_date=datetime(1900,1,1), end_date=datetime(2099,12,31)):
+    # media mobile del confronto tra le medie rolling
+    scal_diff = pd.Series(scal_diff).rolling(window=mean_window, center=False, min_periods=1).mean().to_numpy()
+
+    increase_indices = scal_diff > sigma_lim
+
+    idx = np.flatnonzero(increase_indices)
+    # print(increase_indices, idx)
+
+    try:
+        # punti in cui iniziano nuovi blocchi
+        starts = idx[np.r_[True, np.diff(idx) > 1]]+mean_window
+
+        # punti in cui finiscono i blocchi
+        ends = idx[np.r_[np.diff(idx) > 1, True]]+mean_window
+
+        # print(increase_indices, starts, ends)
+        for start, end in zip(starts, ends):
+            # print(f"Highlighting from {source_origin_time.iloc[start]} to {source_origin_time.iloc[end]}")
+            ax.axvspan(source_origin_time.iloc[start], source_origin_time.iloc[end], color='maroon',alpha=0.2, zorder=0)
+    except Exception as e:
+        # print(f"Error in highlighting: {e}")
+        a=1
+
+    decrease_indices = scal_diff < -sigma_lim
+
+    idx = np.flatnonzero(decrease_indices)
+    # print(decrease_indices, idx)
+
+    try:
+        # punti in cui iniziano nuovi blocchi
+        starts = idx[np.r_[True, np.diff(idx) > 1]]+mean_window
+
+        # punti in cui finiscono i blocchi
+        ends = idx[np.r_[np.diff(idx) > 1, True]]+mean_window
+
+        # print(increase_indices, starts, ends)
+        for start, end in zip(starts, ends):
+            # print(f"Highlighting from {source_origin_time.iloc[start]} to {source_origin_time.iloc[end]}")
+            ax.axvspan(source_origin_time.iloc[start], source_origin_time.iloc[end], color='darkgreen',alpha=0.2, zorder=0)
+    except Exception as e:
+        # print(f"Error in highlighting: {e}")
+        a=1
+    
+
+def plot_allfeatures(features,  start_date=datetime(1800,1,1), end_date=datetime(3099,12,31),mean_window=20,sigma_window=20,sigma_lim=2):
     """
     Plot all features in one Figure
     """
     warnings.filterwarnings("ignore")
 
     features = features[(features['source_origin_time'] >= start_date) & (features['source_origin_time'] <= end_date)]
+
+    
 
 
     plt.figure();
@@ -881,7 +1030,7 @@ def plot_allfeatures(features,  start_date=datetime(1900,1,1), end_date=datetime
     features['PCA_linearity']=(features['PCA_eigval_1']-features['PCA_eigval_2'])/features['PCA_eigval_1']
 
     featuresname = features.columns[7:51:2]
-    featnames=['DT', r'$\rho_s$', r'$\rho_r$', 'A', 'V', r'$a_{GR}$',  r'$b_{GR}$', r'$M_c$', r'$M_r$', 'Dc',
+    featnames=['DT', r'$\rho_s$', r'$\rho_t$', 'A', 'V', r'$a_{GR}$',  r'$b_{GR}$', r'$M_c$', r'$M_r$', 'Dc',
         r'$S_{eff}$', r'$\Delta\epsilon$', 'h', r'$r_{perc}$', r'$C_r(1 km)$', r'$C_r(2 km)$', r'$C_r(5 km)$',
         r'$CoV_{dt}$', r'$\langle m \rangle$', r'$\langle dt \rangle$', r'$\langle m^2 \rangle$', r'$\langle dt^2 \rangle$']
     # Create a figure with 5x4 subplots
@@ -891,8 +1040,22 @@ def plot_allfeatures(features,  start_date=datetime(1900,1,1), end_date=datetime
     # Loop through each feature and plot it in a subplot
     for i, feat in enumerate(featuresname):
         ax = axes[i]
+
+        rolling_mean = features[feat].rolling(window=mean_window, min_periods=1).mean()
+        rolling_std = np.sqrt((features['sig_' +feat]**2).rolling(window=mean_window, min_periods=1).sum())/mean_window
         ax.errorbar(features['source_origin_time'], features[feat], yerr=features['sig_' + feat], fmt='b.', label='features with error', zorder=1)
-        ax.plot(features['source_origin_time'], features[feat].rolling(window=20, min_periods=1).mean(), 'r', label='Rolling Mean', linewidth=2, zorder=2)
+        ax.plot(features['source_origin_time'], rolling_mean, 'r', label='Rolling Mean', linewidth=2, zorder=2)
+        ax.plot(features['source_origin_time'], rolling_mean+rolling_std, 'r--', linewidth=1, zorder=2)
+        ax.plot(features['source_origin_time'], rolling_mean-rolling_std, 'r--', linewidth=1, zorder=2)
+        # rolling_mean = rolling_mean.iloc[jump_idx]
+        # rolling_std = rolling_std.iloc[jump_idx]
+
+        highlight_deviation(ax, features['source_origin_time'], rolling_mean, rolling_std, sigma_lim, sigma_window)
+
+
+        
+        
+
         if i in [1,8, 10, 11]:  # Set y-axis to log scale for specific indices
             ax.set_yscale('log')
         
@@ -918,7 +1081,7 @@ def plot_allfeatures(features,  start_date=datetime(1900,1,1), end_date=datetime
 
     ax=axes[len(featnames)+1]
     ax.plot(features['source_origin_time'], pca_ratio1, 'b.', label='PCA1/PCA2', zorder=1)
-    ax.plot(features['source_origin_time'], pca_ratio1.rolling(window=20, min_periods=1).mean() , 'r-', label='Rolling Mean', zorder=2)
+    ax.plot(features['source_origin_time'], pca_ratio1.rolling(window=mean_window, min_periods=1).mean() , 'r-', label='Rolling Mean', zorder=2)
 
     ax.set_ylabel("PCA eigenvalues")
     
@@ -928,7 +1091,7 @@ def plot_allfeatures(features,  start_date=datetime(1900,1,1), end_date=datetime
     ax=axes[len(featnames)+2]
 
     ax.plot(features['source_origin_time'], pca_ratio2, 'b.', label='PCA1/PCA3', zorder=1)
-    ax.plot(features['source_origin_time'], pca_ratio2.rolling(window=20, min_periods=1).mean() , 'r-', label='Rolling Mean', zorder=2)
+    ax.plot(features['source_origin_time'], pca_ratio2.rolling(window=mean_window, min_periods=1).mean() , 'r-', label='Rolling Mean', zorder=2)
 
     ax.set_ylabel("PCA eigenvalues")
     
@@ -937,7 +1100,7 @@ def plot_allfeatures(features,  start_date=datetime(1900,1,1), end_date=datetime
     ax=axes[len(featnames)+3]
 
     ax.plot(features['source_origin_time'], pca_ratio3, 'b.', label='PCA2/PCA3', zorder=1)
-    ax.plot(features['source_origin_time'], pca_ratio3.rolling(window=20, min_periods=1).mean() , 'r-', label='Rolling Mean', zorder=2)
+    ax.plot(features['source_origin_time'], pca_ratio3.rolling(window=mean_window, min_periods=1).mean() , 'r-', label='Rolling Mean', zorder=2)
 
     ax.set_ylabel("PCA eigenvalues")
     
@@ -955,9 +1118,8 @@ def plot_allfeatures(features,  start_date=datetime(1900,1,1), end_date=datetime
     ax=axes[len(featnames)+4]
 
     ax.plot(features['source_origin_time'], azimuth1/np.pi*180, 'b.', label='Azimuth PCA1', zorder=1)
-    ax.plot(features['source_origin_time'], azimuth1.rolling(window=20, min_periods=1).mean()/np.pi*180 , 'r-', label='Rolling Mean', zorder=2)
+    ax.plot(features['source_origin_time'], azimuth1.rolling(window=mean_window, min_periods=1).mean()/np.pi*180 , 'r-', label='Rolling Mean', zorder=2)
     
-
     ax.set_ylabel("PCA1 Azimuth")
     
     ax.set_title(f"Feature: PCA1 Azimuth")
