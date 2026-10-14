@@ -95,9 +95,14 @@ Install required dependencies (recommended via virtual environment):
 
     pip install -r requirements.txt
 
-with Conda, create the environment using:
+with Conda on Windows, create the environment using:
 
     conda env create -f environment.yml
+    
+with Conda on Linux, create the environment using:
+
+    conda env create -f environment_linux.yml
+
 
 Once installed all the requirements, install pycefeax:
 
