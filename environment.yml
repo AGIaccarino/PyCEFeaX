@@ -161,4 +161,4 @@ dependencies:
   - pip:
       - seisbench
       
-prefix: C:\Users\johna\.conda\envs\env_pycefeax
+prefix: .\.conda\envs\env_pycefeax
