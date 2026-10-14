@@ -1,0 +1,29 @@
+name: env_pycefeax
+channels:
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+dependencies:
+  - affine
+  - cartopy
+  - geographiclib
+  - geopy
+  - ipykernel
+  - joblib
+  - matplotlib
+  - numpy[version='<2']
+  - obspy
+  - pandas
+  - pip
+  - pyproj
+  - python=3.11
+  - rasterio
+  - scikit-learn
+  - scipy
+  - seaborn
+  - shapely
+  - statsmodels
+  - h5py
+    - h5py
+  - pip:
+      - seisbench==0.12.6
+prefix: ./.conda/envs/env_pycefeax
