@@ -77,7 +77,7 @@ def get_feature(data):
             avg_per_window = 0
 
             # Check if there is a saved state to resume from
-            save_path = output_path +'features_checkpoint_'+savetag+'.pkl'
+            save_path = output_path +'/features_checkpoint_'+savetag+'.pkl'
             if os.path.exists(save_path) and input_par["checkpoint"]:
                 with open(save_path, 'rb') as f:
                     checkpoint = pickle.load(f)
